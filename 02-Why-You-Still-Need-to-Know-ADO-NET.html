@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>02 - Why You Still Need to Know ADO.NET</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">02 - Why You Still Need to Know ADO.NET <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+<h1 id="why-you-still-need-to-know-adonet">Why You Still Need to Know ADO.NET</h1>
+<p>ADO.NET is a set of classes (a framework) to interact with data sources such as databases and XML files. ADO is the acronym for ActiveX Data Objects. It allows us to connect to underlying data or databases. It has classes and methods to retrieve and manipulate data.</p>
+<p>The following are a few of the .NET applications that use ADO.NET to connect to a database, execute commands and retrieve data from the database.</p>
+<blockquote>
+<p>ASP.NET Web Applications<br>
+Console Applications<br>
+Windows Applications</p>
+</blockquote>
+<h2 id="various-connection-architectures">Various Connection Architectures</h2>
+<p>There are the following two types of connection architectures:</p>
+<p><strong>1. Connected architecture</strong>: the application remains connected with the database throughout the processing.</p>
+<p><img src="assets/images/connected-classes.jpg" alt="Connected classes" title="Connected classes"></p>
+<h3 id="connection-class">Connection Class</h3>
+<p>In ADO.NET, we use these connection classes to connect to the database. These connection classes also manage transactions and connection pooling.</p>
+<h3 id="command-class">Command Class</h3>
+<p>The Command class provides methods for storing and executing SQL statements and Stored Procedures. The following are the various commands that are executed by the Command Class.</p>
+<p><strong>ExecuteReader</strong>: Returns data to the client as rows. This would typically be an SQL select statement or a Stored Procedure that contains one or more select statements. This method returns a DataReader object that can be used to fill a DataTable object or used directly for printing reports and so forth.</p>
+<p><strong>ExecuteNonQuery</strong>: Executes a command that changes the data in the database, such as an update, delete, or insert statement, or a Stored Procedure that contains one or more of these statements. This method returns an integer that is the number of rows affected by the query.</p>
+<p><strong>ExecuteScalar</strong>: This method only returns a single value. This kind of query returns a count of rows or a calculated value.</p>
+<p><strong>ExecuteXMLReader</strong>: (SqlClient classes only) Obtains data from an SQL Server 2000 database using an XML stream. Returns an XML Reader object.</p>
+<p><strong>2. Disconnected architecture</strong>: the application automatically connects/disconnects during the processing. The application uses temporary data on the application side called a DataSet.</p>
+<p><img src="assets/images/disconnected-classes.jpg" alt="Disconnected classes" title="Disconnected classes"></p>
+<h3 id="datareader-class">DataReader Class</h3>
+<p>The DataReader is used to retrieve data. It is used in conjunction with the Command class to execute an SQL Select statement and then access the returned rows. Learn more here: Data Reader in C#.</p>
+<h3 id="dataadapter-class">DataAdapter Class</h3>
+<p>The DataAdapter is used to connect DataSets to databases. The DataAdapter is most useful when using data-bound controls in Windows Forms, but it can also be used to provide an easy way to manage the connection between your application and the underlying database tables, views and Stored Procedures.</p>
+<h3 id="dataset-class">DataSet Class</h3>
+<p>The DataSet is the heart of ADO.NET. The DataSet is essentially a collection of DataTable objects. In turn each object contains a collection of DataColumn and DataRow objects. The DataSet also contains a Relations collection that can be used to define relations among Data Table Objects.</p>
+<h2 id="builder-classes">Builder Classes</h2>
+<p><img src="assets/images/builder-classes.jpg" alt="Builder classes" title="Builder classes"></p>
+<h2 id="providers">Providers</h2>
+<p><img src="assets/images/providers.jpg" alt="Providers" title="Providers">providers</p>
+<p>The only provider that I am interested in is the <code>System.Data.SqlClient</code>.</p>
+<p><strong>Note:</strong> anything that starts with <code>Sql</code> means that it is used with SQL Server.</p>
+<h2 id="object-relational-mapping-orm">Object Relational Mapping (ORM)</h2>
+<p>These are systems that automatically map related data to objects. This abstracts away the database so we are using classes instead of data sets or data tables working with a row of data at a time. We use LINQ with ORM's to query that data and this can have issues.</p>
+<p><img src="assets/images/object-relational-mapping.jpg" alt="Object Relational Mapping" title="Object Relational Mapping"></p>
+
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>

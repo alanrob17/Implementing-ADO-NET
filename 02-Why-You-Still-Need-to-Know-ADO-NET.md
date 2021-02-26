@@ -62,6 +62,6 @@ The only provider that I am interested in is the ``System.Data.SqlClient``.
 
 ## Object Relational Mapping (ORM)
 
-These are systems that automatically map related data to objects. This abstracts away the database so we are using classes instead of data sets or data table working with a row of data at a time. We use LINQwith ORM's to query that data and this can have issues.
+These are systems that automatically map related data to objects. This abstracts away the database so we are using classes instead of data sets or data tables working with a row of data at a time. We use LINQ with ORM's to query that data and this can have issues.
 
 ![Object Relational Mapping](assets/images/object-relational-mapping.jpg "Object Relational Mapping")
