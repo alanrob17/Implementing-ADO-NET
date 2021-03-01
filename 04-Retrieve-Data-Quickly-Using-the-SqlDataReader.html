@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>04 - Retrieve Data Quickly Using the SqlDataReader</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">04 - Retrieve Data Quickly Using the SqlDataReader <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+<h1 id="retrieve-data-quickly-using-the-sqldatareader">Retrieve Data Quickly Using the SqlDataReader</h1>
+<p>The benefits of using a Data Reader to retrieve your data are.</p>
+<p><img src="assets/images/data-reader.jpg" alt="Data reader" title="Data reader"></p>
+<p>The ADO.NET DataReader object is used for accessing data from the data store and is one of the two mechanisms that ADO.NET provides. The DataReader object provides a read only, forward only, high performance mechanism to retrieve data from a data store as a data stream, while staying connected with the data source. The DataReader is restricted but highly optimized. The .NET framework provides data providers for SQL Server native OLE DB providers and native ODBC drivers,</p>
+<ul>
+<li>SqlDataReader</li>
+<li>OleDbDataReader</li>
+<li>OdbcDataReader</li>
+</ul>
+<p>You can use the ADO.NET DataReader to retrieve a read-only, forward-only stream of data from a database. Using the DataReader can increase application performance and reduce system overhead because only one row at a time is ever in memory. After creating an instance of the Command object, you create a DataReader by calling Command.ExecuteReader to retrieve rows from a data source, as shown in the following example.</p>
+<pre class="prettyprint">    SqlDataReader myReader = myCommand.ExecuteReader();
+</pre>
+<p>You use the Read method of the DataReader object to obtain a row from the results of the query. You can access each column of the returned row by passing the name or ordinal reference of the column to the DataReader. However, for best performance, the DataReader provides a series of methods that allow you to access column values in their native data types (GetDateTime, GetDouble, GetGuid, GetInt32, and so on). For a list of typed accessor methods, see the SqlDataReader Class. Using the typed accessor methods when the underlying data type is known will reduce the amount of type conversion required when retrieving the column value.</p>
+<p>The following code example iterates through a DataReader object, and returns two columns from each row.</p>
+<pre class="prettyprint">    while (myReader.Read())
+    {
+        Console.WriteLine(&quot;\t{0}\t{1}&quot;, myReader.GetInt32(0), myReader.GetString(1));
+    }
+    myReader.Close();  
+</pre>
+<p>The DataReader provides an unbuffered stream of data that allows procedural logic to efficiently process results from a data source sequentially. The DataReader is a good choice when retrieving large amounts of data because the data is not cached in memory. You should always call the <code>Close()</code> method when you have finished using the DataReader object. If your Command contains output parameters or return values, they will not be available until the DataReader is closed.</p>
+<p>Note that while a DataReader is open, the Connection is in use exclusively by that DataReader. You will not be able to execute any commands for the Connection, including creating another DataReader, until the original DataReader is closed.</p>
+<h2 id="an-example-of-using-sqldatareader">An example of using SQLDataReader</h2>
+<pre class="prettyprint">    public void GetProductsAsDataReader()
+    {
+      StringBuilder sb = new StringBuilder(1024);
+
+      // Create a connection
+      using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString)) 
+      {
+        // Create command object
+        using (SqlCommand cmd = new SqlCommand(ProductManager.PRODUCT_SQL, cn))
+        {
+          // Open the connection
+          cn.Open();
+
+          // Execute command to get data reader
+          using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+          {
+            while (dr.Read())
+            {
+              sb.AppendLine(&quot;Product: &quot; + dr[&quot;ProductId&quot;].ToString());
+              sb.AppendLine(dr[&quot;ProductName&quot;].ToString());
+              sb.AppendLine(Convert.ToDateTime(dr[&quot;IntroductionDate&quot;]).ToShortDateString());
+              sb.AppendLine(Convert.ToDecimal(dr[&quot;Price&quot;]).ToString(&quot;c&quot;));
+              sb.AppendLine();
+            }
+          }
+        }
+      }
+
+      ResultText = sb.ToString();
+    }
+</pre>
+<p>In the method above we are going to create a <code>StringBuilder()</code> object to store the data retrieved from the data reader as a text list.</p>
+<p><code>ProductManager.PRODUCT_SQL</code> is a constant in the ProductManager class that contains our sql code.</p>
+<pre class="prettyprint">    public const string PRODUCT_SQL = &quot;SELECT ProductId, ProductName, IntroductionDate, Url, Price, RetireDate, ProductCategoryId FROM Product&quot;;
+</pre>
+<p>We call our data reader inside a <code>using()</code> block.</p>
+<pre class="prettyprint">    using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+</pre>
+<p>We use the <code>.ExecuteReader()</code> method to retrieve our data. Once this has completed we need to close the connection and we do this by using the <code>CloseConnection</code> enumeration. This closes valuable resources.</p>
+<p>We open a <strong>cursor</strong> to read the data row by row.</p>
+<pre class="prettyprint">    while (dr.Read())
+</pre>
+<p>We have to convert our data from the data reader into a string format.</p>
+<pre class="prettyprint">    sb.AppendLine(&quot;Product: &quot; + dr[&quot;ProductId&quot;].ToString());
+    sb.AppendLine(dr[&quot;ProductName&quot;].ToString());
+    sb.AppendLine(Convert.ToDateTime(dr[&quot;IntroductionDate&quot;]).ToShortDateString());
+    sb.AppendLine(Convert.ToDecimal(dr[&quot;Price&quot;]).ToString(&quot;c&quot;));
+    sb.AppendLine();
+</pre>
+<p>This will convert each column object in the data row into a line of text.</p>
+<p><strong>Note:</strong> this process would fail if any of the fields had a <strong>null</strong> value. If you look at the table in the database all columns are <code>NOT NULL</code> so it works in this case. In the real world we would have to allow for nulls and we will do this later.</p>
+<p>The connection is closed because of the <code>CommandBehavior.CloseConnection</code>.</p>
+<h2 id="the-datareader-methods-getordinal-getint32-and-others">The DataReader Methods GetOrdinal GetInt32 and Others</h2>
+<p>We are responsible for casting the data that comes out of the DataReader. Each column has a different data type and we need to know what that is. There are a couple of ways that we can do this.</p>
+<p>There is a <code>GetOrdinal(string)</code> that returns an <strong>integer</strong>. The string value is the name of the column and it returns the column position. Why do we need this? We need it because there are a number of other methods that only work with the integer position number. These methods are</p>
+<ul>
+<li><code>GetInt32(integer)</code></li>
+<li><code>GetString(integer)</code></li>
+<li><code>GetDateTime(integer)</code></li>
+</ul>
+<p>These require the column position in the DataReaderand we combine these with the <code>GetOrdinal(string)</code> to retrieve that data.</p>
+<p>The other thing we didn't take into account were <strong>nulls</strong> so we use the <code>IsDBNull(integer)</code> method to find out if a columns field is either a value or a null.</p>
+<p>Using the <code>GetOrdinal()</code> and <code>Get()</code> methods we can build a generic list of objects.</p>
+<h2 id="perform-conversions-for-a-generic-list">Perform conversions for a generic list</h2>
+<p>First we create a List<T> collection of Products from the data reader.</p>
+<pre class="prettyprint">  /// &lt;summary&gt;
+  /// Get/Set Products collection
+  /// &lt;/summary&gt;
+  public List&lt;Product&gt; Products
+  {
+      get { return _Products; }
+    set {
+        _Products = value;
+    }
+  }
+</pre>
+<p>We can look at the Product class in our code.</p>
+<pre class="prettyprint">  public class Product : CommonBase
+  {
+    public int ProductId { get; set; }
+    public string ProductName { get; set; }
+    public DateTime IntroductionDate { get; set; }
+    public string Url { get; set; }
+    public decimal Price { get; set; }
+    public DateTime? RetireDate { get; set; }
+    public int? ProductCategoryId { get; set; }
+  }
+</pre>
+<p>The interesting fields in the Product class are the RetireDate and ProductCategoryId fields. These are set up as <strong>nullable</strong> fields and this is how they are stored in the database.</p>
+<p>In the following code we clear any list of Products that is hanging around so we can create a new list of Product objects.</p>
+<p>After we open a Sql connection and return a SqlDataReader of Product objects. We iterate through the objects creating a new <code>Products.Add()</code> method to create a new Product from the field values, one for each record in our DataReader. The main aim here is to convert the values coming from the SqlDataReader into the data types that match our Product class.</p>
+<pre class="prettyprint">  public List&lt;Product&gt; GetProductsAsGenericList()
+  {
+    Products.Clear();
+
+    // Create a connection
+    using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+    {
+      // Create command object
+      using (SqlCommand cmd = new SqlCommand(ProductManager.PRODUCT_SQL, cn))
+      {
+        // Open the connection
+        cn.Open()  
+        
+        // Execute command to get data reader
+        using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+        {
+          while (dr.Read())
+          {
+            Products.Add(new Product
+            {
+              ProductId = dr.GetInt32(dr.GetOrdinal(&quot;ProductId&quot;)),
+              ProductName = dr.GetString(dr.GetOrdinal(&quot;ProductName&quot;)),
+              IntroductionDate = dr.GetDateTime(dr.GetOrdinal(&quot;IntroductionDate&quot;)),
+              Url = dr.GetString(dr.GetOrdinal(&quot;Url&quot;)),
+              Price = dr.GetDecimal(dr.GetOrdinal(&quot;Price&quot;)),                
+              // Check for Null
+              RetireDate = dr.IsDBNull(dr.GetOrdinal(&quot;RetireDate&quot;))
+                                ? (DateTime?)null
+                                : Convert.ToDateTime(dr[&quot;RetireDate&quot;]),
+              ProductCategoryId = dr.IsDBNull(dr.GetOrdinal(&quot;ProductCategoryId&quot;))
+                                       ? (int?)null
+                                       : Convert.ToInt32(dr[&quot;ProductCategoryId&quot;]),
+            });
+          }
+        }
+      }
+
+    return Products;
+  }
+</pre>
+<p>We need to know what field types we are using for each column.</p>
+<p>If the column returns an integer value we can.</p>
+<pre class="prettyprint">  ProductId = dr.GetInt32(dr.GetOrdinal(&quot;ProductId&quot;))
+</pre>
+<p>This will return a <em>ProductId</em> which is an integer.</p>
+<p>If the column field is a string we will use the following code to return a string.</p>
+<pre class="prettyprint">  ProductName = dr.GetString(dr.GetOrdinal(&quot;ProductName&quot;))
+</pre>
+<p>For a Decimal field.</p>
+<pre class="prettyprint">  Price = dr.GetDecimal(dr.GetOrdinal(&quot;Price&quot;))
+</pre>
+<p>For a DateTime field.</p>
+<pre class="prettyprint">  IntroductionDate = dr.GetDateTime(dr.GetOrdinal(&quot;IntroductionDate&quot;))
+</pre>
+<p>If a field in the database is nullable we have to do a bit more work.</p>
+<pre class="prettyprint">  RetireDate = dr.IsDBNull(dr.GetOrdinal(&quot;RetireDate&quot;))
+                            ? (DateTime?)null : Convert.ToDateTime(dr[&quot;RetireDate&quot;]),
+  ProductCategoryId = dr.IsDBNull(dr.GetOrdinal(&quot;ProductCategoryId&quot;))
+                            ? (int?)null : Convert.ToInt32(dr[&quot;ProductCategoryId&quot;])
+</pre>
+<p>We are using the <code>dr.IsDBNull()</code> method to return either a null of that data type or return the value in the field.</p>
+<p>At the end of this we end up with our Products collection that we bind to our UI.</p>
+<h2 id="getfieldvalue-generic-method">GetFieldValue() generic method</h2>
+<p>Using each of the <code>Get()</code> methods is the old way of doing things. There is a <code>GetFieldValue&lt;&gt;()</code> where you pass in a data type and it will do the conversion for you to that specific data type. You still have to call <code>GetOrdinal()</code> because <code>GetFieldvalue&lt;&gt;()</code> does take a position and it does not handle nullable fields like the previous <code>Get()</code> methods we saw previously.</p>
+<pre class="prettyprint">  public ObservableCollection&lt;Product&gt; GetProductsUsingFieldValue()
+  {
+    Products.Clear();
+    
+    // Create a connection
+    using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+    {
+      // Create command object
+      using (SqlCommand cmd = new SqlCommand(ProductManager.PRODUCT_SQL, cn))
+      {
+        // Open the connection
+        cn.Open();
+
+        // Execute command to get data reader
+        using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+        {
+          while (dr.Read())
+          {
+            Products.Add(new Product
+            {
+              ProductId = dr.GetFieldValue&lt;int&gt;(dr.GetOrdinal(&quot;ProductId&quot;)),
+              ProductName = dr.GetFieldValue&lt;string&gt;(dr.GetOrdinal(&quot;ProductName&quot;)),
+              IntroductionDate = dr.GetFieldValue&lt;DateTime&gt;(dr.GetOrdinal(&quot;IntroductionDate&quot;)),
+              Url = dr.GetFieldValue&lt;string&gt;(dr.GetOrdinal(&quot;Url&quot;)),
+              Price = dr.GetFieldValue&lt;decimal&gt;(dr.GetOrdinal(&quot;Price&quot;)),
+              
+              // NOTE: GetFieldValue() does not work on nullable fields
+              RetireDate = dr.IsDBNull(dr.GetOrdinal(&quot;RetireDate&quot;))
+                              ? (DateTime?)null : Convert.ToDateTime(dr[&quot;RetireDate&quot;]),
+              ProductCategoryId = dr.IsDBNull(dr.GetOrdinal(&quot;ProductCategoryId&quot;))
+                              ? (int?)null : Convert.ToInt32(dr[&quot;ProductCategoryId&quot;])
+            });
+          }
+        }
+      }
+    }
+    return Products;
+  }
+</pre>
+<p>Once again you still have to know your field types, for example.</p>
+<pre class="prettyprint">  ProductId = dr.GetFieldValue&lt;int&gt;(dr.GetOrdinal(&quot;ProductId&quot;))
+</pre>
+<p>You pass the data type into GetFieldValue<int>(GetOrdinal(&quot;ProductId&quot;)). You still have to pass in the <code>GetOrdinal()</code> method because <code>GetFieldValue()</code> needs the column position.</p>
+<p><strong>Note:</strong> as we said previously <code>GetFieldValue()</code> doesn't work on nullable data types.</p>
+<h2 id="create-extension-method">Create extension method</h2>
+<p>We are going to build an extension method to improve our code readability.</p>
+<p>It is the GetFieldValue<T>(string) method and this will allow us to pass in a string value that is the column name and this will be able to handle the nullable fields. We can simplify all of the code from our previous examples by using this extension method.</p>
+<pre class="prettyprint">  public ObservableCollection&lt;Product&gt; GetProductsUsingExtensionMethods()
+  {
+    Products.Clear()  
+  
+    // Create a connection
+    using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+    {
+      // Create command object
+      using (SqlCommand cmd = new SqlCommand(ProductManager.PRODUCT_SQL, cn))
+      {
+        // Open the connection
+        cn.Open()  
+      
+        // Execute command to get data reader
+        using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+        {
+          while (dr.Read())
+          {
+            Products.Add(new Product
+            {
+              // Use custom extension method
+              ProductId = dr.GetFieldValue&lt;int&gt;(&quot;ProductId&quot;),
+              ProductName = dr.GetFieldValue&lt;string&gt;(&quot;ProductName&quot;),
+              IntroductionDate = dr.GetFieldValue&lt;DateTime&gt;(&quot;IntroductionDate&quot;),
+              Url = dr.GetFieldValue&lt;string&gt;(&quot;Url&quot;),
+              Price = dr.GetFieldValue&lt;decimal&gt;(&quot;Price&quot;),
+              RetireDate = dr.GetFieldValue&lt;DateTime?&gt;(&quot;RetireDate&quot;),
+              ProductCategoryId = dr.GetFieldValue&lt;int?&gt;(&quot;ProductCategoryId&quot;)
+            });
+          }
+        }
+      }
+
+    return Products;
+  }
+</pre>
+<p>The code above is more concise than previous examples. Notice the code in the nullable field types.</p>
+<pre class="prettyprint">  RetireDate = dr.GetFieldValue&lt;DateTime?&gt;(&quot;RetireDate&quot;),
+  ProductCategoryId = dr.GetFieldValue&lt;int?&gt;(&quot;ProductCategoryId&quot;)
+</pre>
+<p>The Extension method is</p>
+<pre class="prettyprint">  public static class DataReaderHelpers
+  {
+    public static T GetFieldValue&lt;T&gt;(this SqlDataReader dr, string name)
+    {
+      T value = default;
+
+      if (!dr[name].Equals(DBNull.Value)) {
+        value = (T)dr[name];
+      }
+
+      return value;
+    }
+  }
+</pre>
+<p>We start by making the data type of the field a nullable data type.</p>
+<pre class="prettyprint">  T value = default;
+</pre>
+<p>We can then check for a field value and if it exists we can get and return the value.</p>
+<pre class="prettyprint">  if (!dr[name].Equals(DBNull.Value)) {
+    value = (T)dr[name];
+  }
+
+  return value;
+</pre>
+<p>In the end we return a null of the data type or the value of the data type and that value becomes the data for that property in the Product object.</p>
+<h2 id="multiple-result-sets">Multiple result sets</h2>
+<p><img src="assets/images/multiple-result-sets.jpg" alt="Multiple result sets" title="Multiple result sets"></p>
+<p>You can pass in two or more select statements and this avoids multiple calls to the database.</p>
+<pre class="prettyprint">  public void GetMultipleResultSets()
+  {
+    Products.Clear();
+    Categories.Clear()
+
+    // Create SQL statement to submit
+    string sql = ProductManager.PRODUCT_SQL;
+    sql += &quot;;&quot; + ProductManager.PRODUCT_CATEGORY_SQL  
+    
+    // Create a connection
+    using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+    {
+      // Create command object
+      using (SqlCommand cmd = new SqlCommand(sql, cn))
+      {
+        // Open the connection
+        cn.Open()  
+      
+        // Execute command to get data reader
+        using (SqlDataReader dr = cmd.ExecuteReader(CommandBehavior.CloseConnection))
+        {
+          while (dr.Read())
+          {
+            Products.Add(new Product
+            {
+              ProductId = dr.GetFieldValue&lt;int&gt;(&quot;ProductId&quot;),
+              ProductName = dr.GetFieldValue&lt;string&gt;(&quot;ProductName&quot;),
+              IntroductionDate = dr.GetFieldValue&lt;DateTime&gt;(&quot;IntroductionDate&quot;),
+              Url = dr.GetFieldValue&lt;string&gt;(&quot;Url&quot;),
+              Price = dr.GetFieldValue&lt;decimal&gt;(&quot;Price&quot;),
+              RetireDate = dr.GetFieldValue&lt;DateTime?&gt;(&quot;RetireDate&quot;),
+              ProductCategoryId = dr.GetFieldValue&lt;int?&gt;(&quot;ProductCategoryId&quot;)
+            });
+
+          // Move to next result set
+          dr.NextResult() 
+          
+          // Read next result set
+          while (dr.Read())
+          {
+            Categories.Add(new ProductCategory
+            {
+              ProductCategoryId = dr.GetFieldValue&lt;int&gt;(&quot;ProductCategoryId&quot;),
+              CategoryName = dr.GetFieldValue&lt;string&gt;(&quot;CategoryName&quot;)
+            });
+          }
+        }
+      }
+    }
+  }
+</pre>
+<p>In this code we are going to return the Products collection and the Categories collection.</p>
+<p>We process the Products collection and when we finish we move the data reader to the next result set.</p>
+<pre class="prettyprint">  // Move to next result set
+  dr.NextResult() 
+</pre>
+<p>Now we process the ProductCategories into the Categories collection.</p>
+<p>Once we have completed this we can bind the collections to different Gridviews or WPF grids.</p>
+
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>
