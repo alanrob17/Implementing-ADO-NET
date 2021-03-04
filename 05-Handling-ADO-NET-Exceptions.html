@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>05 - Handling ADO.NET Exceptions</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">05 - Handling ADO.NET Exceptions <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+<h1 id="handling-adonet-exceptions">Handling ADO.NET Exceptions</h1>
+<pre class="prettyprint">    public int SimpleExceptionHandling()
+    {
+      try 
+      {
+        // Create SQL statement to submit
+        // NOTE: The table name is spelled incorrectly
+        string sql = &quot;INSERT INTO Poduct(ProductName, IntroductionDate, Url, Price)&quot;;
+        sql += &quot; VALUES('VB.NET Fundamentals', '2019-05-21', 'https://bit.ly/30KKHjs', 19   99)&quot;;  
+
+        // Create SQL connection object in using block for automatic closing and disposing
+        using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+        {
+          // Create command object in using block for automatic disposal
+          using (SqlCommand cmd = new SqlCommand(sql, cn))
+          {
+            // Set CommandType
+            cmd.CommandType = CommandType.Text;
+
+            // Open the connection
+            cn.Open(); 
+
+            // Execute the INSERT statement
+            RowsAffected = cmd.ExecuteNonQuery(); 
+
+            ResultText = &quot;Rows Affected: &quot; + RowsAffected.ToString();
+          }
+        }
+      }
+      catch (Exception ex)
+      {
+        // NOTE: A problem here is no access to SqlCommand object
+        //       Thus, we have lost the SQL statement and 
+        //       connection information for reporting purpose
+        ResultText = ex.ToString();
+      } 
+
+      return RowsAffected;
+    }
+</pre>
+<p>The basic way we handle an exception is to wrap our code in a <code>try-catch()</code> block.</p>
+<p>When we open a connection and execute the query that is where an exception could occur so we want to try and catch those exceptions and then do something with that information.</p>
+<p>The code above is a simple example of exception handling. The name of the table is spelled incorrectly so when the query is executed it will cause an exception on this line.</p>
+<pre class="prettyprint">    RowsAffected = cmd.ExecuteNonQuery();
+</pre>
+<p>You can go through the code down to the <code>cn.Open()</code> method with no problem because there is nothing wrong with the connection string. An incorrect connection string would have caused our first exception.</p>
+<p>When you execute the query it will cause an exception due to the fact that the table name is spelled incorrectly so the query will fail.</p>
+<p>You will be thrown to the <code>catch()</code> block.</p>
+<pre class="prettyprint">    catch (Exception ex)
+    {
+      // NOTE: A problem here is no access to SqlCommand object
+      //       Thus, we have lost the SQL statement and 
+      //       connection information for reporting purpose
+      ResultText = ex.ToString();
+    }
+</pre>
+<p>The error will be a Sql exception because execution fails in the database. It provides us with a lot of information including an Errors collection.There is information about the provider we are using and the server name and that is a little more useful where there is a Sql exception.</p>
+<p>The exception information is limited.</p>
+<blockquote>
+<p>System.Data.SqlClient.SqlException (0x80131904): Invalid object name > 'Poduct'.<br>
+at System.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action1 > wrapCloseInAction)          at System.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, &gt; Action1 wrapCloseInAction)<br>
+at System.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean > callerHasConnectionLock, Boolean asyncClose)<br>
+at System.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader > dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean&amp; dataReady)<br>
+at System.Data.SqlClient.SqlCommand.RunExecuteNonQueryTds(String methodName, Boolean async, Int32 timeout, > Boolean asyncWrite)<br>
+at System.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource`1 completion, String > methodName, Boolean sendToPipe, Int32 timeout, Boolean& usedCache, Boolean asyncWrite, Boolean inRetry)<br>
+at System.Data.SqlClient.SqlCommand.ExecuteNonQuery()<br>
+at ADONET_Samples.ViewModels.ExceptionViewModel.SimpleExceptionHandling() in > G:\Training\Pluralsight\Pluralsight - Implementing ADO.NET with > C#\source\05\demos\ADONET-Samples\ViewModels\ExceptionViewModel.cs:line 28<br>
+ClientConnectionId:fbdcb249-8d1c-41ab-9fb8-eb242404bce1<br>
+Error Number:208,State:1,Class:16</p>
+</blockquote>
+<p>The problem with this exception report is that we are losing some of the Sql Server information. We also don't have any access to the command or connection objects. This could help us to fix the error that just happened so we need to enhance the information that we are sending back and the way to do that is to catch the Sql exception, not the generic exception object.</p>
+<p>When we catch the Sql exception we can loop through the errors (<code>ex.Errors</code>) collection and report on it.</p>
+<p>Next we are going to catch the Sql exception.</p>
+<pre class="prettyprint">    public int CatchSqlException()
+    {
+      try 
+      {
+        // Create SQL statement to submit
+        string sql = &quot;Product_Insert&quot;;
+
+        // Create SQL connection object in using block for automatic closing and disposing
+        using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+        {
+          // Create command object in using block for automatic disposal
+          using (SqlCommand cmd = new SqlCommand(sql, cn))
+          {
+            // NOTE: The following parameter is spelled incorrectly.
+            cmd.Parameters.Add(new SqlParameter(&quot;@ProdutName&quot;, &quot;Generate Exception&quot;));
+            cmd.Parameters.Add(new SqlParameter(&quot;@IntroductionDate&quot;, DateTime.Now));
+            cmd.Parameters.Add(new SqlParameter(&quot;@Url&quot;, &quot;www.wrong.com&quot;));
+            cmd.Parameters.Add(new SqlParameter(&quot;@Price&quot;, 0));
+
+            // Set CommandType
+            cmd.CommandType = CommandType.StoredProcedure;
+          
+            // Open the connection
+            cn.Open();
+          
+            // Execute the INSERT statement
+            RowsAffected = cmd.ExecuteNonQuery();
+
+            ResultText = &quot;Rows Affected: &quot; + RowsAffected.ToString();
+          }
+        }
+      }
+      catch (SqlException ex) 
+      {
+        // Get all error information
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+
+        for (int i = 0; i &lt; ex.Errors.Count; i++) {
+          sb.AppendLine(&quot;Index #: &quot; + i.ToString());
+          sb.AppendLine(&quot;Type: &quot; + ex.Errors[i].GetType().FullName);
+          sb.AppendLine(&quot;Message: &quot; + ex.Errors[i].Message);
+          sb.AppendLine(&quot;Source: &quot; + ex.Errors[i].Source);
+          sb.AppendLine(&quot;Number: &quot; + ex.Errors[i].Number.ToString());
+          sb.AppendLine(&quot;State: &quot; + ex.Errors[i].State.ToString());
+          sb.AppendLine(&quot;Class: &quot; + ex.Errors[i].Class.ToString());
+          sb.AppendLine(&quot;Server: &quot; + ex.Errors[i].Server);
+          sb.AppendLine(&quot;Procedure: &quot; + ex.Errors[i].Procedure);
+          sb.AppendLine(&quot;LineNumber: &quot; + ex.Errors[i].LineNumber.ToString());
+        }
+
+        // NOTE: A problem here is no access to SqlCommand object
+        //       Thus, we have lost the SQL statement and 
+        //       connection information for reporting purpose
+        ResultText = sb.ToString() + Environment.NewLine + ex.ToString();
+      }
+      catch (Exception ex) 
+      {
+        ResultText = ex.ToString();
+      }
+
+      return RowsAffected;
+    }
+
+</pre>
+<p>In our code we set up the <code>try-catch()</code> block and then we set up the procedure we want to call. There are a number of parameters but the first parameter has a typo so our query won't execute again.</p>
+<p>This time it calls the catch block and we are going to call the errors collection to get more detailed information about the Sql Server exception. The extra details include the error message, the server name, the data provider, the stored procedure name and even the line number where the stored procedure failed. In our case it failed at line 0 because a parameter was incorrect so it didn't run.</p>
+<blockquote>
+<p>Index #: 0<br>
+Type: System.Data.SqlClient.SqlError<br>
+Message: Procedure or function 'Product_Insert' expects parameter '@ProductName', which was not supplied.<br>
+Source: .Net SqlClient Data Provider<br>
+Number: 201<br>
+State: 4<br>
+Class: 16<br>
+Server: TIGER<br>
+Procedure: Product_Insert<br>
+LineNumber: 0</p>
+<p>System.Data.SqlClient.SqlException (0x80131904): Procedure or function 'Product_Insert' expects parameter &gt; '@ProductName', which was not supplied.<br>
+at System.Data.SqlClient.SqlConnection.OnError(SqlException exception, Boolean breakConnection, Action1        wrapCloseInAction)          at System.Data.SqlClient.SqlInternalConnection.OnError(SqlException exception, Boolean breakConnection, &gt; Action1 wrapCloseInAction)<br>
+at System.Data.SqlClient.TdsParser.ThrowExceptionAndWarning(TdsParserStateObject stateObj, Boolean &gt; callerHasConnectionLock, Boolean asyncClose)<br>
+at System.Data.SqlClient.TdsParser.TryRun(RunBehavior runBehavior, SqlCommand cmdHandler, SqlDataReader &gt; dataStream, BulkCopySimpleResultSet bulkCopyHandler, TdsParserStateObject stateObj, Boolean&amp; dataReady)<br>
+at System.Data.SqlClient.SqlCommand.FinishExecuteReader(SqlDataReader ds, RunBehavior runBehavior, String<br>
+resetOptionsString, Boolean isInternal, Boolean forDescribeParameterEncryption, Boolean &gt; shouldCacheForAlwaysEncrypted)<br>
+at System.Data.SqlClient.SqlCommand.RunExecuteReaderTds(CommandBehavior cmdBehavior, RunBehavior &gt; runBehavior, Boolean returnStream, Boolean async, Int32 timeout, Task&amp; task, Boolean asyncWrite, Boolean &gt; inRetry, SqlDataReader ds, Boolean describeParameterEncryptionRequest)<br>
+at System.Data.SqlClient.SqlCommand.RunExecuteReader(CommandBehavior cmdBehavior, RunBehavior runBehavior, &gt; Boolean returnStream, String method, TaskCompletionSource1 completion, Int32 timeout, Task&amp; task, Boolean&amp; &gt; usedCache, Boolean asyncWrite, Boolean inRetry)         at System.Data.SqlClient.SqlCommand.InternalExecuteNonQuery(TaskCompletionSource1 completion, String &gt; methodName, Boolean sendToPipe, Int32 timeout, Boolean&amp; usedCache, Boolean asyncWrite, Boolean inRetry)<br>
+at System.Data.SqlClient.SqlCommand.ExecuteNonQuery()<br>
+at ADONET_Samples.ViewModels.ExceptionViewModel.CatchSqlException() in G:\Training\Pluralsight\Pluralsight &gt; - Implementing ADO.NET with C#\source\05\demos\ADONET-Samples\ViewModels\ExceptionViewModel.cs:line 67<br>
+ClientConnectionId:1020b1c0-aeeb-4339-a8d1-8af33bc7e93f<br>
+Error Number:201,State:4,Class:16</p>
+</blockquote>
+<p>We now have much better information being returned but we still don't have access to the command and connection objects.</p>
+<h2 id="sqlexceptionmanager-class">SqlExceptionManager class</h2>
+<p>We are going to create a SqlExceptionManager class that is a singleton which means that there will only ever be one instance of this class running.</p>
+<p>We are going to create a <code>Publish()</code> method with an exception argument, a command object argument and a message that will name the procedure where the exception occured.</p>
+<pre class="prettyprint">    public int GatherExceptionInformation()
+    {
+      // Define connection/command objects outside of try...catch block 
+      // so you can gather more information for exception handling
+      SqlConnection cn = null;
+      SqlCommand cmd = null;
+
+      try
+      {
+        // Create SQL statement to submit
+        string sql = &quot;Product_Insert&quot;;
+
+        // Create SQL connection object
+        cn = new SqlConnection(&quot;Server=Localhost;Database=ADONETSamples;uid=sa;pwd=P@ssw0rd;&quot;);
+        // Create command object
+        cmd = new SqlCommand(sql, cn);
+        // NOTE: The following parameter is spelled incorrectly.
+        cmd.Parameters.Add(new SqlParameter(&quot;@ProdutName&quot;, &quot;Generate Exception&quot;));
+        cmd.Parameters.Add(new SqlParameter(&quot;@IntroductionDate&quot;, DateTime.Now));
+        cmd.Parameters.Add(new SqlParameter(&quot;@Url&quot;, &quot;www.wrong.com&quot;));
+        cmd.Parameters.Add(new SqlParameter(&quot;@Price&quot;, 0));
+
+        // Set CommandType
+        cmd.CommandType = CommandType.StoredProcedure;
+        // Open the connection
+        cn.Open();
+        // Execute the INSERT statement
+        RowsAffected = cmd.ExecuteNonQuery();
+
+        ResultText = &quot;Rows Affected: &quot; + RowsAffected.ToString();
+      }
+      catch (SqlException ex)
+      {
+        SqlServerExceptionManager.Instance.Publish(ex, cmd, &quot;Error in ExceptionViewModel.GatherExceptionInformation()&quot;);
+        ResultText = SqlServerExceptionManager.Instance.LastException.ToString();
+      }
+      catch (Exception ex){
+        ResultText = ex.ToString();
+      }
+      finally 
+      {
+        // Must close/dispose here so we have access to info for error handling
+        if (cn != null) {
+          cn.Close();
+          cn.Dispose();
+        }
+        if (cmd != null) {
+          cmd.Dispose();
+        }
+      }
+
+      return RowsAffected;
+    }
+</pre>
+<p>At the start of the code we will create a command and connection object that will both be null. This will enable us to have these objects available for when we want to publish an error.</p>
+<p>To be able to use these objects we have removed the <code>using()</code> blocks so will use a <code>finally()</code> block to close and dispose of our resources.</p>
+<p>We are going to put a breakpoint on the following line.</p>
+<pre class="prettyprint">  SqlServerExceptionManager.Instance.Publish(ex, cmd, &quot;Error in ExceptionViewModel.GatherExceptionInformation()&quot;);
+</pre>
+<p>We will follow this to the <code>Publish()</code> instance.</p>
+<pre class="prettyprint">  public Exception LastException { get; set; }
+
+  public virtual void Publish(Exception ex, SqlCommand cmd, string exceptionMsg)
+  {
+    LastException = ex;
+    if (cmd != null)
+    {
+      LastException = CreateDbException(ex, cmd, null);
+
+      // TODO: Implement an exception publisher here
+      System.Diagnostics.Debug.WriteLine(ex.ToString());
+    }
+  }
+</pre>
+<h4 id="createdbexception">CreateDbException</h4>
+<pre class="prettyprint">  public virtual SqlServerDataException CreateDbException(Exception ex, SqlCommand cmd, string exceptionMsg)
+  {
+    SqlServerDataException exc;
+  
+    exceptionMsg = string.IsNullOrEmpty(exceptionMsg) ? string.Empty : exceptionMsg + &quot; - &quot;;
+  
+    exc = new SqlServerDataException(exceptionMsg + ex.Message, ex)
+    {
+      ConnectionString = cmd.Connection.ConnectionString,
+      Database = cmd.Connection.Database,
+      SQL = cmd.CommandText,
+      CommandParameters = cmd.Parameters,
+      WorkstationId = Environment.MachineName
+    };
+
+    return exc;
+  }
+</pre>
+<p>We override the <code>.ToString()</code> method.</p>
+<pre class="prettyprint">    public override string ToString()
+    {
+      StringBuilder sb = new StringBuilder(1024);
+
+      sb.AppendLine(new string('-', 80));
+      if (!string.IsNullOrEmpty(Message))
+      {
+        sb.AppendLine(&quot;Type: &quot; + this.GetType().FullName);
+      }
+      if (!string.IsNullOrEmpty(Message))
+      {
+        sb.AppendLine(&quot;Message: &quot; + Message);
+      }
+      if (!string.IsNullOrEmpty(Database))
+      {
+        sb.AppendLine(&quot;Database: &quot; + Database);
+      }
+      if (!string.IsNullOrEmpty(SQL))
+      {
+        sb.AppendLine(&quot;SQL: &quot; + SQL);
+      }
+      if (CommandParameters.Count &gt; 0)
+      {
+        sb.AppendLine(&quot;Parameters:&quot;);
+        sb.Append(GetCommandParametersAsString());
+      }
+      if (!string.IsNullOrEmpty(ConnectionString))
+      {
+        sb.AppendLine(&quot;Connection String: &quot; + ConnectionString);
+      }
+      if (!string.IsNullOrEmpty(StackTrace))
+      {
+        sb.AppendLine(&quot;Stack Trace: &quot; + StackTrace);
+      }
+      if (IsDatabaseSpecificError(this))
+      {
+        sb.AppendLine(GetDatabaseSpecificError(this));
+      }
+      // Gather info from inner exceptions
+      sb.AppendLine(GetInnerExceptionInfo());
+      // Report stack trace
+      sb.AppendLine(&quot;Stack Trace: &quot; + this.InnerException.StackTrace);
+
+      return sb.ToString();
+    }
+</pre>
+<p>We can iterate through the Sql parameters with the following method.</p>
+<pre class="prettyprint">    protected virtual string GetCommandParametersAsString()
+    {
+      StringBuilder ret = new StringBuilder(1024);
+
+      if (CommandParameters != null)
+      {
+        if (CommandParameters.Count &gt; 0)
+        {
+          ret = new StringBuilder(1024);
+
+          foreach (IDbDataParameter param in CommandParameters)
+          {
+            ret.Append(&quot;  &quot; + param.ParameterName);
+            if (param.Value == null)
+              ret.AppendLine(&quot; = null&quot;);
+            else
+              ret.AppendLine(&quot; = &quot; + param.Value.ToString());
+          }
+        }
+      }
+
+      return ret.ToString();
+    }
+</pre>
+<p>We are looking for a database specific error and if it exists we will run the following method that goes through the errors collection.</p>
+<pre class="prettyprint">    protected virtual string GetDatabaseSpecificError(Exception ex)
+    {
+      SqlException exp;
+      StringBuilder sb = new StringBuilder(1024);
+
+      if (ex is SqlException)
+      {
+        exp = ((SqlException)(ex));
+
+        for (int index = 0; index &lt;= exp.Errors.Count - 1; index++)
+        {
+          sb.AppendLine();
+          sb.AppendLine(new string('*', 40));
+          sb.AppendLine(&quot;**** BEGIN: SQL Server Exception #&quot; + (index + 1).ToString() + &quot; ****&quot;);
+          sb.AppendLine(&quot;            Type: &quot; + exp.Errors[index].GetType().FullName);
+          sb.AppendLine(&quot;            Message: &quot; + exp.Errors[index].Message);
+          sb.AppendLine(&quot;            Source: &quot; + exp.Errors[index].Source);
+          sb.AppendLine(&quot;            Number: &quot; + exp.Errors[index].Number.ToString());
+          sb.AppendLine(&quot;            State: &quot; + exp.Errors[index].State.ToString());
+          sb.AppendLine(&quot;            Class: &quot; + exp.Errors[index].Class.ToString());
+          sb.AppendLine(&quot;            Server: &quot; + exp.Errors[index].Server);
+          sb.AppendLine(&quot;            Procedure: &quot; + exp.Errors[index].Procedure);
+          sb.AppendLine(&quot;            LineNumber: &quot; + exp.Errors[index].LineNumber.ToString());
+          sb.AppendLine(&quot;**** END: SQL Server Exception #&quot; + (index + 1).ToString() + &quot; ****&quot;);
+          sb.AppendLine(new string('*', 40));
+        }
+      }
+      else
+      {
+        sb.Append(ex.Message);
+      }
+
+      return sb.ToString();
+    }
+</pre>
+<p>Now we are printing out a complete list of error information.</p>
+<blockquote>
+<p>Type: ADONET_Samples.SqlServerDataException<br>
+Message: Login failed for user 'sa'.		
+Database: ADONETSamples		
+SQL: Product_Insert		
+Parameters:		
+@ProdutName = Generate Exception		
+@IntroductionDate = 4/03/2021 2:59:51 PM		
+@Url = www.wrong.com		
+@Price = null		
+Connection String: Data Source=Localhost;Initial Catalog=ADONETSamples;User ID=<strong><strong><strong>;Password=</strong></strong></strong></p>
+<hr>
+<p>**** BEGIN: SQL Server Exception #1 ****		
+Type: System.Data.SqlClient.SqlError		
+Message: Login failed for user 'sa'.		
+Source: .Net SqlClient Data Provider		
+Number: 18456		
+State: 1		
+Class: 14		
+Server: Localhost		
+Procedure: 		
+LineNumber: 65536		
+**** END: SQL Server Exception #1 ****</p>
+<hr>
+<p>Stack Trace:    at System.Data.SqlClient.SqlInternalConnectionTds..ctor(DbConnectionPoolIdentity identity, SqlConnectionString connectionOptions, SqlCredential credential, Object providerInfo, String newPassword, SecureString newSecurePassword, Boolean redirectedUserInstance, SqlConnectionString userConnectionOptions, SessionData reconnectSessionData, DbConnectionPool pool, String accessToken, Boolean applyTransientFaultHandling, SqlAuthenticationProviderManager sqlAuthProviderManager)		
+at System.Data.SqlClient.SqlConnectionFactory.CreateConnection(DbConnectionOptions options, DbConnectionPoolKey poolKey, Object poolGroupProviderInfo, DbConnectionPool pool, DbConnection owningConnection, DbConnectionOptions userOptions)		
+at System.Data.ProviderBase.DbConnectionFactory.CreatePooledConnection(DbConnectionPool pool, DbConnection owningObject, DbConnectionOptions options, DbConnectionPoolKey poolKey, DbConnectionOptions userOptions)		
+at System.Data.ProviderBase.DbConnectionPool.CreateObject(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)		
+at System.Data.ProviderBase.DbConnectionPool.UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection)		
+at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, UInt32 waitForMultipleObjectsTimeout, Boolean allowCreate, Boolean onlyOneCheckConnection, DbConnectionOptions userOptions, DbConnectionInternal&amp; connection)		
+at System.Data.ProviderBase.DbConnectionPool.TryGetConnection(DbConnection owningObject, TaskCompletionSource1 retry, DbConnectionOptions userOptions, DbConnectionInternal&amp; connection)		    at System.Data.ProviderBase.DbConnectionFactory.TryGetConnection(DbConnection owningConnection, TaskCompletionSource1 retry, DbConnectionOptions userOptions, DbConnectionInternal oldConnection, DbConnectionInternal&amp; connection)		
+at System.Data.ProviderBase.DbConnectionInternal.TryOpenConnectionInternal(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource1 retry, DbConnectionOptions userOptions)		    at System.Data.ProviderBase.DbConnectionClosed.TryOpenConnection(DbConnection outerConnection, DbConnectionFactory connectionFactory, TaskCompletionSource1 retry, DbConnectionOptions userOptions)		
+at System.Data.SqlClient.SqlConnection.TryOpenInner(TaskCompletionSource1 retry)		    at System.Data.SqlClient.SqlConnection.TryOpen(TaskCompletionSource1 retry)		
+at System.Data.SqlClient.SqlConnection.Open()		
+at ADONET_Samples.ViewModels.ExceptionViewModel.GatherExceptionInformation() in G:\Training\Pluralsight\Pluralsight - Implementing ADO.NET with C#\source\05\demos\ADONET-Samples\ViewModels\ExceptionViewModel.cs:line 129</p>
+</blockquote>
+<p>If you look at the Sql connection string you will notice that the userId and password are asterisks. We did this with the following method.</p>
+<pre class="prettyprint">    protected virtual string HideLoginInfoForConnectionString(string connectionString)
+    {
+      SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(connectionString);
+
+      if (!string.IsNullOrEmpty(builder.UserID)) {
+        builder.UserID = &quot;******&quot;;
+      }
+      if (!string.IsNullOrEmpty(builder.Password)) {
+        builder.Password = &quot;******&quot;;
+      }
+
+      return builder.ConnectionString;
+    }
+</pre>
+<p>This gives us some security by not allowing our user information to be accessed.</p>
+<p>Now that we have the complete exception information we would send the results to a logging system like Log4Net.</p>
+
+<p><strong>Note:</strong> I would be tempted to create two methods for each of my database functions. One without <code>using()</code> statements to catch any errors and then a final method with <code>using()</code> statements after I finish my development work and I am happy that the code is working as expected.</p>
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>
