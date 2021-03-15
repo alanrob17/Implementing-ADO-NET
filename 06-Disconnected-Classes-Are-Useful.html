@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>05 - Handling ADO.NET Exceptions</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">05 - Handling ADO.NET Exceptions <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+
+<h1 id="disconnected-classes-are-useful">Disconnected Classes Are Useful</h1>
+<h2 id="what-are-disconnected-classes">What are disconnected classes?</h2>
+<p>ADO.NET disconnected classes are the basic building blocks of the ADO .NET architecture. These classes are loosely coupled with data providers. The System.Data namespace defines these classes.</p>
+<h3 id="the-systemdata-namespace">The System.Data Namespace</h3>
+<p>The System.Data namespace consists of classes that are the basic building block of the ADO.NET architecture. These classes are also known as disconnected classes because they store disconnected data and can work without data providers.</p>
+<p>We use Data Tables and Data Sets to work with this disconnected data.</p>
+<h3 id="loading-a-data-table-using-a-sql-adapter">Loading a Data Table using a Sql Adapter</h3>
+<p><img src="assets/images/data-table.jpg" alt="Data Table" title="Data Table"></p>
+<p>The upshot of this process is that we close our connection (release our resources) once we have filled our data table and now we can work with our data in memory.</p>
+<p>The following code shows loading a data table and then looping through the rows and columns.</p>
+<pre class="prettyprint">    public DataTable GetProductsAsDataTable()
+    {
+      // Initialize DataTable object to null in case of an error
+      DataTable dt = null;
+
+      // Create a connection
+      using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+      {
+        // Create command object
+        using (SqlCommand cmd = new SqlCommand(ProductManager.PRODUCT_SQL, cn)) 
+        {
+          // Create a SQL Data Adapter
+          using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+          {
+            // Create new DataTable object for filling
+            dt = new DataTable();
+
+            // Fill DataTable using Data Adapter
+            da.Fill(dt);
+          }
+        }
+      }
+
+      // Loop through all rows/columns
+      ProcessRowsAndColumns(dt);
+
+      return dt;
+    }
+</pre>
+<p>Once we have filled the data table we would close the connection and then start working with the data table. In our case we have a method to work with the data.</p>
+<h3 id="processrowsandcolumns">ProcessRowsAndColumns</h3>
+<pre class="prettyprint">    private void ProcessRowsAndColumns(DataTable dt)
+    {
+      StringBuilder sb = new StringBuilder(2048);
+      int index = 1;
+
+      // Process each row
+      foreach (DataRow row in dt.Rows)
+      {
+        sb.AppendLine(&quot;** Row: &quot; + index.ToString() + &quot; **&quot;);
+        // Process each column
+        foreach (DataColumn col in dt.Columns) 
+        {
+          sb.AppendLine(col.ColumnName + &quot;: &quot; + row[col.ColumnName].ToString());
+        }
+        
+        sb.AppendLine();
+
+        index++;
+      }
+
+      ResultText = sb.ToString();
+    }
+</pre>
+<p>We process the data into a StringBuilder object and then return the text. This just gives us a text view of our data but you could load it into a gridview or dropdown list.</p>
+<h3 id="create-a-generic-list-of-products-from-a-datatable">Create a Generic List of Products from a DataTable</h3>
+<p>We have created a generic list of objects before but now we are going to use a Data Table to hold our objects. To be able to do this we have to convert the table to an enumerable list. Once we have that enumerable list we are going to use the generic <code>Field&lt;T&gt;</code> method and this does handle nullable fields.</p>
+<h4 id="getproductsasgenericlist">GetProductsAsGenericList</h4>
+<pre class="prettyprint">  public List&lt;Product&gt; GetProductsAsGenericList()
+  {
+    List&lt;Product&gt; products = new List&lt;Product&gt;();
+    ResultText = string.Empty;
+    RowsAffected = 0;
+
+    // Initialize DataTable object to null in case of an error
+    DataTable dt = null;
+
+    // Create SQL statement to submit
+    string sql = ProductManager.PRODUCT_SQL;
+    sql += &quot; WHERE ProductName LIKE @ProductName&quot;;
+
+    // Create a connection
+    using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+    {
+      // Create command object
+      using (SqlCommand cmd = new SqlCommand(sql, cn))
+      {
+        // Create parameter
+        cmd.Parameters.Add(new SqlParameter(&quot;@ProductName&quot;, SearchEntity.ProductName));
+
+        // Create a SQL Data Adapter
+        using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+        {
+          // Fill DataTable using Data Adapter
+          dt = new DataTable();
+          da.Fill(dt);
+          if (dt.Rows.Count &gt; 0)
+          {
+            products =
+              (from row in dt.AsEnumerable()  // Must convert to an enumerable object
+               select new Product
+               {
+                 // Use Field&lt;T&gt;() method to get data
+                 ProductId = row.Field&lt;int&gt;(&quot;ProductId&quot;),
+                 ProductName = row.Field&lt;string&gt;(&quot;ProductName&quot;),
+                 IntroductionDate = row.Field&lt;DateTime&gt;(&quot;IntroductionDate&quot;),
+                 Url = row.Field&lt;string&gt;(&quot;Url&quot;),
+                 Price = row.Field&lt;decimal&gt;(&quot;Price&quot;),
+                 // The Field&lt;T&gt;() method works with nullable types
+                 RetireDate = row.Field&lt;DateTime?&gt;(&quot;RetireDate&quot;),
+                 ProductCategoryId = row.Field&lt;int?&gt;(&quot;ProductCategoryId&quot;)
+               }).ToList();
+          }
+        }
+      }
+    }
+
+    return products;
+  }
+</pre>
+<p>Where <code>ProductManager.PRODUCT_SQL</code> is a constant string containing the select statement.</p>
+<pre class="prettyprint">  public const string PRODUCT_SQL = &quot;SELECT ProductId, ProductName, IntroductionDate, Url, Price, RetireDate, ProductCategoryId FROM Product&quot;;
+</pre>
+<p>We add a <code>where</code> clause to create a smaller result set.</p>
+<p><code>SearchEntity.ProductName</code> contains the value <strong>WPF%</strong> so we are searching for values that contain the product name WPF.</p>
+<p>We create a Sql Data Adapter and fill the Data Table using the Sql Data Adapter. We then make sure the Data Table has some data with the statement <code>dt.Rows.Count &gt; 0</code>. We then make the Data Table enumerable with the <code>dt.AsEnumerable()</code> method that converts the data into an enumerable list.</p>
+<p>We convert the rows in the enumerable list into the Product objects properties using the Field<T> method to get the data.</p>
+<pre class="prettyprint">  select new Product
+     {
+       ProductId = row.Field&lt;int&gt;(&quot;ProductId&quot;),
+</pre>
+<p>With the nullable fields we have the following format to allow for null values.</p>
+<pre class="prettyprint">  RetireDate = row.Field&lt;DateTime?&gt;(&quot;RetireDate&quot;),
+  ProductCategoryId = row.Field&lt;int?&gt;(&quot;ProductCategoryId&quot;)
+</pre>
+<p>The last thing we do is convert it to a list.</p>
+<pre class="prettyprint">  ).ToList();
+</pre>
+<p>Now if you look at our products list you will see that we have three values. we can now display these values however we want either using WPF or a web view.</p>
+<p>We have seen how easy it is to take a Data Table and create an enumerable list but what happens if you have more than one Data Table or multiple result sets? We saw how to do this with a DataReader but we can also do this with a DataSet.</p>
+<h3 id="dataset">DataSet</h3>
+<p>A <strong>DataSet</strong> is a collection of Data Table objects that are kept in memory. We use multiple SELECT statements to create multiple Data Table objects. This is done automatically using a DatSet.</p>
+<pre class="prettyprint">    public void GetMultipleResultSets()
+    {
+      ResultText = string.Empty;
+      RowsAffected = 0;
+      DataSet ds = new DataSet();
+
+      // Create SQL statement to submit
+      string sql = ProductManager.PRODUCT_SQL;
+      sql += &quot;;&quot; + ProductManager.PRODUCT_CATEGORY_SQL;
+
+      // Create a connection
+      using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+      {
+        // Create command object
+        using (SqlCommand cmd = new SqlCommand(sql, cn))
+        {
+          // Create a SQL Data Adapter
+          using (SqlDataAdapter da = new SqlDataAdapter(cmd))
+          {
+            // Fill DataSet using Data Adapter            
+            da.Fill(ds);
+
+            if (ds.Tables.Count &gt; 0)
+            {
+              Products = ds.Tables[0];
+              Categories = ds.Tables[1];
+            }
+          }
+        }
+      }
+    }
+</pre>
+<p>We create a new DatSet.</p>
+<pre class="prettyprint">  DataSet ds = new DataSet();
+</pre>
+<p>Then we create our multiple SELECT statements. Each SELECT statement is separated by a semi colon.</p>
+<pre class="prettyprint">  string sql = ProductManager.PRODUCT_SQL;
+  sql += &quot;;&quot; + ProductManager.PRODUCT_CATEGORY_SQL;
+</pre>
+<p>We are grabbing rows from the Product and ProductCategory tables. We then do our standard connection, command and Sql Data Adapter commands. Now we fill our Sql Data Adapter.</p>
+<pre class="prettyprint">  da.Fill(ds);
+</pre>
+<p>Now if we have table data in the data adapter we can load the data into the DataSets.</p>
+<pre class="prettyprint">  if (ds.Tables.Count &gt; 0)
+  {
+    Products = ds.Tables[0];
+    Categories = ds.Tables[1];
+  }
+</pre>
+<p>The order that the tables are created are the same as the order in the SELECT statements.</p>
+<p>The Products and Categories Data Tables are created as properties.</p>
+<pre class="prettyprint">  #region Public Properties
+  /// &lt;summary&gt;
+  /// Get/Set Products collection
+  /// &lt;/summary&gt;
+  public DataTable Products
+  {
+    get { return _Products; }
+    set {
+      _Products = value;
+    }
+
+  /// &lt;summary&gt;
+  /// Get/Set Category collection
+  /// &lt;/summary&gt;
+  public DataTable Categories
+  {
+    get { return _Categories; }
+    set {
+      _Categories = value;
+    }
+  }
+</pre>
+<h3 id="dataview-class">DataView Class</h3>
+<p>We have seen Data Tables and DataSets and there is one more in memory construct that we can use and that is the DataView.</p>
+<p>A DataView is a bindable view of a Data Table. Sometimes you want to bind data up to a grid and you can't do that with a Data Table out of a box but with a DataView you can and there is a property on a Data Table that can convert a Data Table to a DataView. There are other uses for a DataView as well. For example there is a <code>Sort</code> property to sort the data. There is a <code>RowFilter</code> property that we can use to filter the data. The nice thing is that once we have that data in memory we can sort and filter in memory and we don't have to go back to the database. We can also edit that data in memory and then choose to return that data back to the database later.</p>
+<h3 id="sorting-data-in-a-dataview">Sorting data in a DataView</h3>
+<pre class="prettyprint">    public DataView GetProductsSortedByPriceDescending()
+    {
+      ProductManager mgr = new ProductManager();
+      DataView dv = null;
+
+      // Get Products as a DataTable
+      DataTable dt = mgr.GetProductsAsDataTable();
+      if (dt != null)
+      {
+        // Set DataView
+        dv = dt.DefaultView;
+
+        // Sort the data
+        dv.Sort = &quot;IntroductionDate DESC, Price DESC&quot;;
+
+        // Set RowsAffected
+        RowsAffected = dv.Count;
+
+        // Set ResultText
+        ResultText = &quot;Rows: &quot; + RowsAffected.ToString();
+      }
+
+      return dv;
+    }
+</pre>
+<p>The <code>ProductManager()</code> method loads the Products into a Data Table.</p>
+<pre class="prettyprint">  DataTable dt = mgr.GetProductsAsDataTable();
+</pre>
+<p>We can now load the Data Table into the DataView using the following command.</p>
+<pre class="prettyprint">  dv = dt.DefaultView;
+</pre>
+<p>Next we can set up the <code>Sort()</code> statement and using a comma we can sort by multiple fields.</p>
+<pre class="prettyprint">  dv.Sort = &quot;IntroductionDate DESC, Price DESC&quot;;
+</pre>
+<p>The next example is using the <code>RowFilter()</code> method to filter the number of records being returned from memory.</p>
+<pre class="prettyprint">    public DataView GetProductsPriceLessThan(decimal lessThan)
+    {
+      ProductManager mgr = new ProductManager();
+      DataView dv = null;
+
+      // Get Products as a DataTable
+      DataTable dt = mgr.GetProductsAsDataTable();
+
+      if (dt != null)
+      {
+        // Set DataView
+        dv = dt.DefaultView;
+
+        // Filter the Data
+        dv.RowFilter = &quot;Price &lt; &quot; + lessThan.ToString();
+
+        // Can filter using And, Or, True, False, Is, Like, etc.
+        //dv.RowFilter = &quot;Price &lt; &quot; + lessThan.ToString() + &quot; AND ProductCategoryId = 1&quot;;
+
+        // Set RowsAffected
+        RowsAffected = dv.Count;
+
+        // Set ResultText
+        ResultText = &quot;Rows: &quot; + RowsAffected.ToString();
+      }
+
+      return dv;
+    }
+</pre>
+<h3 id="create-a-dataview-using-a-linq-statement">Create a DataView using a LINQ statement</h3>
+<p>We can also use LINQ to filter records. We have our Data Table and we can use LINQ to query the Data Table and return the records to the DataView.</p>
+<pre class="prettyprint">    public DataView GetProductsPriceLessThanLINQ(decimal lessThan)
+    {
+      ProductManager mgr = new ProductManager();
+      DataView dv = null;
+
+      // Get Products as a DataTable
+      DataTable dt = mgr.GetProductsAsDataTable();
+
+      if (dt != null)
+      {
+        dv = (from prod in dt.AsEnumerable()
+          where prod.Field&lt;decimal&gt;(&quot;Price&quot;) &lt; lessThan
+          orderby prod.Field&lt;decimal&gt;(&quot;Price&quot;)
+          select prod).AsDataView();
+
+        // Set RowsAffected
+        RowsAffected = dv.Count;
+
+        // Set ResultText
+        ResultText = &quot;Rows: &quot; + RowsAffected.ToString();
+      }
+
+      return dv;
+    }
+</pre>
+<p>If the Data Table has records we can interrogate the Data Table with our LINQ query.</p>
+<pre class="prettyprint">  dv = (from prod in dt.AsEnumerable()
+    where prod.Field&lt;decimal&gt;(&quot;Price&quot;) &lt; lessThan
+    orderby prod.Field&lt;decimal&gt;(&quot;Price&quot;)
+    select prod).AsDataView();
+</pre>
+<p>We use the <code>AsDataView()</code> method to return the filtered Data Table records back to the DataView.</p>
+<p>We can use <code>Sort()</code> and <code>RowFilter()</code> or use LINQ to return data to the DataView. The choice is yours.</p>
+<h3 id="convert-a-dataview-back-to-a-datatable">Convert a DataView Back to a DataTable</h3>
+<p>If you apply a sort or a row filter to your DataView you can also return that data to a Data Table.</p>
+<pre class="prettyprint">    public DataTable DataViewToDataTable()
+    {
+      ProductManager mgr = new ProductManager();
+      DataView dv = null;
+      DataTable dtFiltered = null;
+      
+      // Get Products as a DataTable
+      DataTable dt = mgr.GetProductsAsDataTable();
+
+      if (dt != null)
+      {
+        // Build a DataView
+        dv = (from prod in dt.AsEnumerable()
+              where prod.Field&lt;decimal&gt;(&quot;Price&quot;) &lt; 29
+              orderby prod.Field&lt;decimal&gt;(&quot;Price&quot;) descending
+              select prod).AsDataView();
+
+        // Set RowsAffected
+        RowsAffected = dv.Count;
+
+        // Convert back to DataTble
+        dtFiltered = dv.ToTable();
+
+        // Set ResultText
+        ResultText = &quot;Rows: &quot; + RowsAffected.ToString();
+      }
+
+      return dtFiltered;
+    }
+</pre>
+<p>In the code above we are creating a new Data Table named <strong>dtFiltered</strong> to contain the records that were sorted and filtered in the DataView.</p>
+<pre class="prettyprint">  dtFiltered = dv.ToTable();
+</pre>
+<p>We use the <code>ToTable()</code> method to return the DataView data to the new Data Table (dtFiltered).</p>
+
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>
