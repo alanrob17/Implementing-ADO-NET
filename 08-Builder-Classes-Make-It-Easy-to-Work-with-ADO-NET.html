@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>08 - Builder Classes Make It Easy to Work with ADO.NET</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">08 - Builder Classes Make It Easy to Work with ADO.NET <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+<h1 id="builder-classes-make-it-easy-to-work-with-adonet">Builder Classes Make It Easy to Work with ADO.NET</h1>
+<p>The Builder classes allow us to break apart a connection string, build a connection string, and build INSERT, UPDATE and DELETE commands automatically using the built in classes of ADO.NET.</p>
+<h2 id="sqlconnectionstringbuilder">SqlConnectionStringBuilder</h2>
+<p>You can use this to pass in a SqlConnection string and it will separate the attributes into properties of that object automatically for you.</p>
+<p>This saves you from writing a parse command to break down the parts of the connection string.</p>
+<p>In this example we have a SlqConnectionString.</p>
+<pre class="prettyprint">    Server=Localhost;Database=ADONETSamples;Trusted_Connection=Yes;Application Name=ADO.NET Samples
+</pre>
+<p>And we will use the following routine to break down the attributes into properties.</p>
+<pre class="prettyprint">    public string BreakApartConnectionString()
+    {
+      StringBuilder sb = new StringBuilder(1024);
+
+      // Create a connection string builder object
+      SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+     
+      // Access each property of the connection string
+      sb.AppendLine(&quot;Application Name: &quot; + builder.ApplicationName);
+      sb.AppendLine(&quot;Data Source: &quot; + builder.DataSource);
+      sb.AppendLine(&quot;Initial Catalog: &quot; + builder.InitialCatalog);
+      sb.AppendLine(&quot;User ID: &quot; + builder.UserID);
+      sb.AppendLine(&quot;Password: &quot; + builder.Password);
+      sb.AppendLine(&quot;Integrated Security: &quot; + builder.IntegratedSecurity);
+
+      ResultText = sb.ToString();
+
+      return ResultText;
+    }
+</pre>
+<p>We end up with.</p>
+<blockquote>
+<p>Application Name: ADO.NET Samples<br>
+Data Source: Localhost<br>
+Initial Catalog: ADONETSamples<br>
+User ID:<br>
+Password:<br>
+Integrated Security: True</p>
+</blockquote>
+<p>Integrated Security in this case is <strong>TRUE</strong> but if we add in a User ID and a Password.</p>
+<pre class="prettyprint">    Server=Localhost;Database=ADONETSamples;User ID=Tester;Password=pass1234;Application Name=ADO.NET Samples
+</pre>
+<p>We get the following changes.</p>
+<blockquote>
+<p>Application Name: ADO.NET Samples<br>
+Data Source: Localhost<br>
+Initial Catalog: ADONETSamples<br>
+User ID: Tester<br>
+Password=pass1234<br>
+Integrated Security: False</p>
+</blockquote>
+<p>In our example we use.</p>
+<pre class="prettyprint">    SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+</pre>
+<p>This will automatically breakdown the Sql connection string for us.</p>
+<h2 id="creating-a-connection-string-using-sqlconnectionstringbuilder">Creating a connection string using SqlConnectionStringBuilder</h2>
+<p>There is a <code>ToString()</code> method that allows us to build a connection string.</p>
+<pre class="prettyprint">    public string CreateConnectionString()
+    {
+      SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder
+      {
+        ApplicationName = &quot;A New Application&quot;,
+        ConnectTimeout = 5,
+        DataSource = &quot;Localhost&quot;,
+        InitialCatalog = &quot;ADONETSamples&quot;,
+        UserID = &quot;Tester&quot;,
+        Password = &quot;P@ssw0rd&quot;
+      };
+
+      ResultText = builder.ToString();
+
+      return ResultText;
+    }
+</pre>
+<p>This code creates the connection string using this statement.</p>
+<pre class="prettyprint">    ResultText = builder.ToString();
+</pre>
+<blockquote>
+<p>Data Source=Localhost;Initial Catalog=ADONETSamples;User ID=Tester;Password=P@ssw0rd;Connect Timeout=5;Application Name=&quot;A New Application&quot;</p>
+</blockquote>
+<h2 id="sqlcommandbuilder">SqlCommandBuilder</h2>
+<p>SqlCommandBuilder creates a command object with a SELECT statement and it will infer the INSERT, UPDATE and DELETE commands for us. It will create a parameter collection for us for each command.</p>
+<p>There are a couple of things that we have to be aware of.</p>
+<p>We must have all non-nullable fields in our SELECT statement, or at least fields without defaults. So if you have a non-nullable field and it has a default you will be okay. We can also use updatable views to create these commands but you must fill in all of the parameters that are generated.</p>
+<pre class="prettyprint">    public string CreateDataModificationCommands()
+    {
+      try
+      {
+        // Create SQL connection object
+        using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+        {
+          // Create a SQL Data Adapter
+          using (SqlDataAdapter da = new SqlDataAdapter(ProductManager.PRODUCT_CATEGORY_SQL, cn))
+          {
+            // Fill DataTable
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+
+            // Create a command builder
+            using (SqlCommandBuilder builder = new SqlCommandBuilder(da))
+            {
+              // Build INSERT Command
+              // Pass true to generate parameters names matching column names
+              ResultText = &quot;Insert: &quot; + builder.GetInsertCommand(true).CommandText;
+
+              ResultText += Environment.NewLine;
+
+              // Build UPDATE command
+              ResultText += &quot;Update: &quot; + builder.GetUpdateCommand(true).CommandText;
+
+              ResultText += Environment.NewLine;
+
+              // Build DELETE command
+              ResultText += &quot;Delete: &quot; + builder.GetDeleteCommand(true).CommandText;              
+            }
+          }
+        }
+      }
+      catch (Exception ex)
+      {
+        ResultText = ex.ToString();
+      }
+
+      return ResultText;
+    }
+</pre>
+<p>In our code we get the Sql SELECT statement from the ProductManager class.</p>
+<pre class="prettyprint">    public const string PRODUCT_CATEGORY_SQL = &quot;SELECT ProductCategoryId, CategoryName FROM ProductCategory&quot;;
+</pre>
+<p><strong>Note:</strong> that we are using <strong>true</strong> in all of our Builder commands so this will use the field names that it will see in the database.</p>
+<blockquote>
+<p>Insert: INSERT INTO [ProductCategory] ([CategoryName]) VALUES (@CategoryName)<br>
+Update: UPDATE [ProductCategory] SET [CategoryName] = @CategoryName WHERE (([ProductCategoryId] = &gt; @Original_ProductCategoryId) AND ([CategoryName] = @Original_CategoryName))<br>
+Delete: DELETE FROM [ProductCategory] WHERE (([ProductCategoryId] = @Original_ProductCategoryId) AND ([CategoryName] = @Original_CategoryName))</p>
+</blockquote>
+<p>If I use the other ProductManager SELECT statement.</p>
+<pre class="prettyprint">    public const string PRODUCT_SQL = &quot;SELECT ProductId, ProductName, IntroductionDate, Url, Price, RetireDate, ProductCategoryId FROM Product&quot;;
+</pre>
+<p>These commands are generated.</p>
+<blockquote>
+<p>Insert: INSERT INTO [Product] ([ProductName], [IntroductionDate], [Url], [Price], [RetireDate], &gt; [ProductCategoryId]) VALUES (@ProductName, @IntroductionDate, @Url, @Price, @RetireDate, @ProductCategoryId)
+Update: UPDATE [Product] SET [ProductName] = @ProductName, [IntroductionDate] = @IntroductionDate, [Url] = &gt; @Url, [Price] = @Price, [RetireDate] = @RetireDate, [ProductCategoryId] = @ProductCategoryId WHERE ((&gt; [ProductId] = @Original_ProductId) AND ([ProductName] = @Original_ProductName) AND ([IntroductionDate] = &gt; @Original_IntroductionDate) AND ([Url] = @Original_Url) AND ([Price] = @Original_Price) AND (&gt; (@IsNull_RetireDate = 1 AND [RetireDate] IS NULL) OR ([RetireDate] = @Original_RetireDate)) AND (&gt; (@IsNull_ProductCategoryId = 1 AND [ProductCategoryId] IS NULL) OR ([ProductCategoryId] = &gt; @Original_ProductCategoryId)))
+Delete: DELETE FROM [Product] WHERE (([ProductId] = @Original_ProductId) AND ([ProductName] = &gt; @Original_ProductName) AND ([IntroductionDate] = @Original_IntroductionDate) AND ([Url] = @Original_Url) AND (&gt; [Price] = @Original_Price) AND ((@IsNull_RetireDate = 1 AND [RetireDate] IS NULL) OR ([RetireDate] = &gt; @Original_RetireDate)) AND ((@IsNull_ProductCategoryId = 1 AND [ProductCategoryId] IS NULL) OR (&gt; [ProductCategoryId] = @Original_ProductCategoryId)))</p>
+</blockquote>
+<h2 id="insert-a-product">Insert a product</h2>
+<p>we can use a SELECT statement to generate an INSERT command. All we need to do is supply the parameters.</p>
+<pre class="prettyprint">    public string InsertUsingDataModificationCommand()
+    {
+      try
+      {
+        // Create SQL connection object
+        using (SqlConnection cn = new SqlConnection(AppSettings.ConnectionString))
+        {
+          // Create a SQL Data Adapter
+          using (SqlDataAdapter da = new SqlDataAdapter(ProductManager.PRODUCT_SQL, cn))
+          {
+            // Fill DataTable
+            DataTable dt = new DataTable();
+            da.Fill(dt);
+
+            // Create a command builder
+            using (SqlCommandBuilder builder = new SqlCommandBuilder(da))
+            {
+              // Build INSERT Command
+              using (SqlCommand cmd = builder.GetInsertCommand(true))
+              {
+                // Set generated parameters with values to insert
+                cmd.Parameters[&quot;@ProductName&quot;].Value = &quot;A New Product 123&quot;;
+                cmd.Parameters[&quot;@IntroductionDate&quot;].Value = DateTime.Now;
+                cmd.Parameters[&quot;@Url&quot;].Value = &quot;www.fairwaytech.com&quot;;
+                cmd.Parameters[&quot;@Price&quot;].Value = 100;
+                cmd.Parameters[&quot;@RetireDate&quot;].Value = DateTime.Now.AddMonths(3);
+                cmd.Parameters[&quot;@ProductCategoryId&quot;].Value = 1;
+
+                // Set the connection into the command object
+                cmd.Connection = cn;
+
+                // Open the connection for inserting
+                cn.Open();
+
+                // Execute the command
+                cmd.ExecuteNonQuery();
+              }
+            }
+          }
+        }
+      }
+      catch (Exception ex)
+      {
+        ResultText = ex.ToString();
+      }
+
+      return ResultText;
+    }
+</pre>
+<p>Once we run this method it will add a new record into the database.</p>
+<p>You could also use this code to run an UPDATE or DELETE command.</p>
+
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>
