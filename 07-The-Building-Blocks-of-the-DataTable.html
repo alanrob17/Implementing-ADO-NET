@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<title>07 - The Building Blocks of the DataTable</title>
+<link href="assets/css/bootstrap.css" rel="stylesheet">
+<!-- Custom styles for this template -->
+<link href="assets/css/starter-template.css" rel="stylesheet">
+<script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js?lang=css&amp;skin=sunburst"></script>
+<style type="text/css">
+html {
+	font-size: 90.0%;
+}
+
+h2 {
+	margin-top: 60px;
+}
+
+h4, h3 {
+	padding-top: 40px!;		
+}
+
+p {
+	font-size: 1.2em;
+}
+h4 {
+	font-size: 1.4em;
+}
+
+img, pre.prettyprint {
+	margin-top: 1.5em;
+	margin-bottom: 1.5em;
+}
+h1, h2, h3, h4, h5, h6 {
+    color:#007bff;
+
+}
+blockquote {
+    border-left: 4px solid #999;
+    padding-left: 1rem;
+    page-break-inside: avoid;
+}
+</style>
+</head>
+<body>
+<header>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="#">Pluralsight - Implementing ADO.NET with C#</a>
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarCollapse"
+                aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarCollapse">
+                <ul class="navbar-nav mr-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">Home</a>
+                    </li>
+                    <li class="nav-item active">
+                        <a class="nav-link" href="#">07 - The Building Blocks of the DataTable <span class="sr-only">(current)</span></a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">About</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+</header>
+<div class="container">
+    <div class="starter-template">
+
+<h1 id="the-building-blocks-of-the-datatable">The Building Blocks of the DataTable</h1>
+<h2 id="create-datatable">Create DataTable</h2>
+<p>We can create a new DataTable from scratch. We instantiate a new DataTable object. We add a new column to a columns collection. For each column that we create we will specify the data type, column name, caption, etc.</p>
+<p>Once we have the columns created we can add data to the DataTable using the <code>NewRow()</code> method on the DataTable object. We set the column names with appropriate data. We then add the row to the Rows collection of our DataTable.</p>
+<pre class="prettyprint">    public DataTable BuildDataTable()
+    {
+      DataTable dt = new DataTable();
+      DataColumn dc;
+
+      //*********************
+      //*** Creating Columns
+      //*********************
+      // Method 1: Use Add() method to build column
+      dt.Columns.Add(&quot;ProductId&quot;, typeof(int));
+      
+      // Method 2: Create a DataColumn object for more control
+      dc = new DataColumn
+      {
+        DataType = typeof(string),
+        ColumnName = &quot;ProductName&quot;,
+        Caption = &quot;Product Name&quot;,
+        ReadOnly = false
+      };
+      dt.Columns.Add(dc);
+
+      // Method 3: Create the DataColumn object in Add() method
+      dt.Columns.Add(new DataColumn
+      {
+        DataType = typeof(decimal),
+        ColumnName = &quot;Price&quot;,
+        Caption = &quot;Price&quot;,
+        ReadOnly = false
+      });
+
+      //*********************
+      //*** Adding Rows
+      //*********************
+      // Method 1: Pass in variable amount of arguments to Add() method
+      // Pass data in the same order as the columns you created
+      dt.Rows.Add(1, &quot;VB.NET Fundamentals&quot;, 9.99D);
+
+      // Method 2: Create a new DataRow
+      DataRow dr = dt.NewRow();
+      // Set each column by name
+      dr[&quot;ProductId&quot;] = 2;
+      dr[&quot;ProductName&quot;] = &quot;XML Fundamentals in C#&quot;;
+      dr[&quot;Price&quot;] = 19D;
+      // Add DataRow to Rows collection
+      dt.Rows.Add(dr);
+
+      // After you are done adding all rows, call AcceptChanges
+      dt.AcceptChanges();
+
+      return dt;
+    }
+</pre>
+<p>We start by creating a new DataTable.</p>
+<pre class="prettyprint">  DataTable dt = new DataTable();
+</pre>
+<p>We then create a new data column object.</p>
+<pre class="prettyprint">  DataColumn dc;
+</pre>
+<p>Now we can build our data columns. There are a number of ways to do this.</p>
+<p>The first method is.</p>
+<pre class="prettyprint">  dt.Columns.Add(&quot;ProductId&quot;, typeof(int));
+</pre>
+<p>The second method is probably a cleaner way to build a column.</p>
+<pre class="prettyprint">  dc = new DataColumn
+  {
+    DataType = typeof(string),
+    ColumnName = &quot;ProductName&quot;,
+    Caption = &quot;Product Name&quot;,
+    ReadOnly = false
+  };
+
+  dt.Columns.Add(dc);
+</pre>
+<p>The third method is the best option as we create a column and add it to the columns collection at the same time.</p>
+<pre class="prettyprint">  dt.Columns.Add(new DataColumn
+  {
+    DataType = typeof(decimal),
+    ColumnName = &quot;Price&quot;,
+    Caption = &quot;Price&quot;,
+    ReadOnly = false
+  });
+</pre>
+<p>We have added three columns to our DataTable so now we can add data to our DataTable.</p>
+<p>We can add a whole row of data in a one line structure.</p>
+<pre class="prettyprint">  dt.Rows.Add(1, &quot;VB.NET Fundamentals&quot;, 9.99D);
+</pre>
+<p>Or we can create a new data row.</p>
+<pre class="prettyprint">  DataRow dr = dt.NewRow();
+  // Set each column by name
+  dr[&quot;ProductId&quot;] = 2;
+  dr[&quot;ProductName&quot;] = &quot;XML Fundamentals in C#&quot;;
+  dr[&quot;Price&quot;] = 19D;
+  // Add DataRow to Rows collection
+  dt.Rows.Add(dr);
+</pre>
+<p>Once we have added our new rows we can accept changes to our DataTable.</p>
+<pre class="prettyprint">  dt.AcceptChanges();
+</pre>
+<p>We are now ready to use our new DataTable.</p>
+<h2 id="clone-and-copy">Clone and Copy</h2>
+<p>We have two options here. We can <code>Clone()</code> an existing DataTable and this won't have any data attached to it or we can <code>Copy()</code> the structure and the data from an existing DataTable.</p>
+<h3 id="clone-a-datatable">Clone a DataTable</h3>
+<pre class="prettyprint">  public DataTable CloneDataTable()
+  {
+    DataTable dt = BuildDataTable();
+    
+    // Clone just the structure of the DataTable, no data
+    DataTable newDataTable = dt.Clone();
+    
+    return newDataTable;
+  }
+</pre>
+<p>The BuildDataTable() method uses the structure we created in the previous example and creates a new (empty) DataTable structure.</p>
+<h3 id="copy-a-datatable">Copy a DataTable</h3>
+<pre class="prettyprint">  public DataTable CopyDataTable()
+  {
+    DataTable dt = BuildDataTable();
+
+    // Clone the structure and copy all data
+    DataTable newDataTable = dt.Copy();
+
+    return newDataTable;
+  }
+</pre>
+<p>This will create the structure and copy the data from the existing DataTable.</p>
+<h2 id="select-method">Select() method</h2>
+<p>We can select rows from an existing DataTable and create a new DataTable containing only those rows by using a query in the Select statement.</p>
+<pre class="prettyprint">    public DataTable SelectCopyRowByRow()
+    {
+      DataTable dt;
+      DataTable newDataTable;
+      ProductManager mgr = new ProductManager();
+
+      // Get Products from Table
+      dt = mgr.GetProductsAsDataTable();
+
+      // Clone structure into new DataTable
+      newDataTable = dt.Clone();
+
+      // Select Rows from DataTableObject
+      DataRow[] rows = dt.Select(&quot;Price &lt; 20&quot;);
+
+      // Loop through array of rows
+      foreach (DataRow row in rows)
+      {
+        // NOTE: The following causes an error 
+        //       A single row cannot belong to more than one data table
+        // newDataTable.Rows.Add(row); 
+
+        // Method 1: Use ItemArray to avoid the error
+        //newDataTable.Rows.Add(row.ItemArray);
+
+        // Method 2: Use ImportRow to avoid error
+        newDataTable.ImportRow(row);
+      }
+
+      newDataTable.AcceptChanges();
+      
+      return newDataTable;
+    }
+</pre>
+<p>We use the <code>ProductsManager()</code> class to get a DataTable containing all rows using the following method.</p>
+<pre class="prettyprint">  dt = mgr.GetProductsAsDataTable();
+</pre>
+<p>We clone the original structure.</p>
+<pre class="prettyprint">  newDataTable = dt.Clone();
+</pre>
+<p>We then create a select statement to select the required rows from the existing DataTable.</p>
+<pre class="prettyprint">  DataRow[] rows = dt.Select(&quot;Price &lt; 20&quot;);
+</pre>
+<p>We loop through each row in the rows collection to add it to the newDataTable collection.</p>
+<p>The following won't work!</p>
+<pre class="prettyprint">  newDataTable.Rows.Add(row);
+</pre>
+<p>A single row can only belong to one DataTable.</p>
+<p>We work around this by.</p>
+<pre class="prettyprint">  newDataTable.Rows.Add(row.ItemArray);
+</pre>
+<p>Or a better method is to.</p>
+<pre class="prettyprint">  newDataTable.ImportRow(row);
+</pre>
+<p>Once we have looped through all of the rows from the select statement we can accept the changes in the new DataTable.</p>
+<pre class="prettyprint">  newDataTable.AcceptChanges();
+</pre>
+<p>We can now return the new DataTable collection that has a subset of the original data.</p>
+<h2 id="copytodatatable-method">CopyToDataTable method</h2>
+<p>There is an easier way to copy select rows from a table and that is using the <code>CopyToDataTable()</code> method.</p>
+<p>First you select your rows and then use <code>CopyToDataTable()</code> to copy those rows to a new Data Table and there is no need to loop through your rows.</p>
+<p>The example below is exactly the same as the last example but uses less code to achieve the same result.</p>
+<pre class="prettyprint">    public DataTable SelectUsingCopyToDataTable()
+    {
+      DataTable dt;
+      DataTable newDataTable;
+      ProductManager mgr = new ProductManager();
+
+      // Get Products from Table
+      dt = mgr.GetProductsAsDataTable();
+
+      // Select Rows from DataTableObject and Copy to New DataTable
+      newDataTable = dt.Select(&quot;Price &lt; 20&quot;).CopyToDataTable();
+                  
+      return newDataTable;
+    }
+</pre>
+<p>The <code>Select</code> operation and <code>CopyToDataTable()</code> method are completed in the same statement.</p>
+<p>You don't have to use the <code>newDataTable.AcceptChanges()</code> method to save the records into the DataTable as they are automatically accepted in this case.</p>
+
+</div><!-- starter-template -->
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/default.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"/>
+<script>hljs.initHighlightingOnLoad();</script>
+
+<script src="assets/js/jquery.min.js"></script>
+<script src="assets/js/bootstrap.min.js"></script>
+</body>
+</html>
